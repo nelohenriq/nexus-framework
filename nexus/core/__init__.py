@@ -1,16 +1,17 @@
 """
-NEXUS Framework - Core Components
+NEXUS Framework - Core Agent
 
-This module provides the core agent, memory, and tool components.
+Core agent loop, memory, and context management.
 """
 
-# Placeholder imports - will be implemented in Phase 3
-# from nexus.core.agent import Agent
-# from nexus.core.memory import MemoryManager
-# from nexus.core.tools import ToolRegistry
+from __future__ import annotations
+
+from .messages import Message, MessageRole, ConversationTurn
+from .memory import MemoryManager, MemoryEntry
+from .context import AgentContext, Checkpoint
 
 __all__ = [
- # 'Agent',
- # 'MemoryManager',
- # 'ToolRegistry',
+    "Message", "MessageRole", "ConversationTurn",
+    "MemoryManager", "MemoryEntry",
+    "AgentContext", "Checkpoint",
 ]
