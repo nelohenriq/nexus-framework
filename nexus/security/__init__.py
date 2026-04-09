@@ -55,6 +55,12 @@ class SecurityLayer:
 
 
 class InputValidationLayer(SecurityLayer):
+    _PATTERNS = [
+        re.compile(r"<script[^>]*>", re.IGNORECASE),
+        re.compile(r"javascript:", re.IGNORECASE),
+        re.compile(r"on\w+\s*=", re.IGNORECASE),
+    ]
+
     def __init__(self, max_length: int = 10000, max_depth: int = 10) -> None:
         super().__init__("input_validation")
         self.max_length = max_length
@@ -64,9 +70,8 @@ class InputValidationLayer(SecurityLayer):
         if isinstance(data, str):
             if len(data) > self.max_length:
                 return False, "Input exceeds max length"
-            patterns = [r"<script[^>]*>", r"javascript:", r"on\\w+\\s*="]
-            for p in patterns:
-                if re.search(p, data, re.IGNORECASE):
+            for p in self._PATTERNS:
+                if p.search(data):
                     self.log_event(SecurityEvent(self.name, "injection", SecurityLevel.HIGH, "Pattern detected"))
                     return False, "Injection detected"
         elif isinstance(data, dict):

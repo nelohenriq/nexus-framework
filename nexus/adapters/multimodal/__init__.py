@@ -9,9 +9,11 @@ from __future__ import annotations
 import base64
 import mimetypes
 import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -24,14 +26,23 @@ class ModalityType(str, Enum):
     VIDEO = "video"
 
 
-@dataclass
+@dataclass(slots=True)
 class MultimodalContent:
     modality: ModalityType
     content: Union[str, bytes]
     mime_type: Optional[str] = None
     metadata: dict = field(default_factory=dict)
-    
+    _api_cache: dict = field(default_factory=dict, repr=False)
+
     def to_api_format(self, provider: str = "openai") -> dict:
+        cache_key = provider
+        if cache_key in self._api_cache:
+            return self._api_cache[cache_key]
+        result = self._compute_api_format(provider)
+        self._api_cache[cache_key] = result
+        return result
+
+    def _compute_api_format(self, provider: str) -> dict:
         if self.modality == ModalityType.TEXT:
             return {"type": "text", "text": self.content}
         elif self.modality == ModalityType.IMAGE:
@@ -45,11 +56,11 @@ class MultimodalContent:
 class BaseMultimodalAdapter(ABC):
     def __init__(self, max_size_mb: int = 20) -> None:
         self.max_size_bytes = max_size_mb * 1024 * 1024
-    
+
     @abstractmethod
     def process(self, content: Union[str, bytes, Path], **kwargs) -> MultimodalContent:
         pass
-    
+
     def _validate_size(self, content: bytes) -> None:
         if len(content) > self.max_size_bytes:
             raise ValueError(f"Content exceeds max size")
@@ -60,11 +71,20 @@ class VisionAdapter(BaseMultimodalAdapter):
         "openai": {"max_px": 2048, "formats": ["png", "jpeg", "gif", "webp"]},
         "anthropic": {"max_px": 8000, "formats": ["png", "jpeg", "gif", "webp"]},
     }
-    
+
+    # Pre-compiled magic bytes for image type detection
+    _MAGIC_BYTES = {
+        b"\x89PNG": "image/png",
+        b"\xff\xd8\xff": "image/jpeg",
+        b"GIF87a": "image/gif",
+        b"GIF89a": "image/gif",
+        b"RIFF": "image/webp",
+    }
+
     def __init__(self, default_provider: str = "openai") -> None:
         super().__init__(max_size_mb=20)
         self.default_provider = default_provider
-    
+
     def process(self, content: Union[str, bytes, Path], provider: str = None) -> MultimodalContent:
         provider = provider or self.default_provider
         if isinstance(content, Path):
@@ -77,23 +97,20 @@ class VisionAdapter(BaseMultimodalAdapter):
             modality=ModalityType.IMAGE,
             content=content,
             mime_type=mime,
-            metadata={"provider": provider}
+            metadata={"provider": provider, "timestamp": time.monotonic()}
         )
-    
+
     def _detect_image_mime(self, content: bytes) -> str:
-        if content[:8] == b"\x89PNG\r\n\x1a\n":
-            return "image/png"
-        elif content[:2] == b"\xff\xd8":
-            return "image/jpeg"
-        elif content[:6] in (b"GIF87a", b"GIF89a"):
-            return "image/gif"
-        return "image/png"
+        for magic, mime in self._MAGIC_BYTES.items():
+            if content[:len(magic)] == magic:
+                return mime
+        return "application/octet-stream"
 
 
 class PDFAdapter(BaseMultimodalAdapter):
     def __init__(self) -> None:
         super().__init__(max_size_mb=50)
-    
+
     def process(self, content: Union[str, bytes, Path], **kwargs) -> MultimodalContent:
         if isinstance(content, Path):
             content = content.read_bytes()
@@ -103,14 +120,17 @@ class PDFAdapter(BaseMultimodalAdapter):
         return MultimodalContent(
             modality=ModalityType.PDF,
             content=content,
-            mime_type="application/pdf"
+            mime_type="application/pdf",
+            metadata={"timestamp": time.monotonic()}
         )
 
 
 class AudioAdapter(BaseMultimodalAdapter):
+    SUPPORTED_FORMATS = {"mp3", "wav", "ogg", "m4a", "flac"}
+
     def __init__(self) -> None:
         super().__init__(max_size_mb=25)
-    
+
     def process(self, content: Union[str, bytes, Path], **kwargs) -> MultimodalContent:
         if isinstance(content, Path):
             content = content.read_bytes()
@@ -121,44 +141,34 @@ class AudioAdapter(BaseMultimodalAdapter):
         return MultimodalContent(
             modality=ModalityType.AUDIO,
             content=content,
-            mime_type=mime
+            mime_type=mime,
+            metadata={"timestamp": time.monotonic()}
         )
-    
+
     def _detect_audio_mime(self, content: bytes) -> str:
         if content[:3] == b"ID3" or content[:2] == b"\xff\xfb":
             return "audio/mpeg"
         elif content[:4] == b"RIFF":
             return "audio/wav"
-        return "audio/mpeg"
+        elif content[:4] == b"OggS":
+            return "audio/ogg"
+        return "application/octet-stream"
 
 
 class MultimodalManager:
-    def __init__(self) -> None:
-        self._adapters = {
-            ModalityType.IMAGE: VisionAdapter(),
-            ModalityType.PDF: PDFAdapter(),
-            ModalityType.AUDIO: AudioAdapter(),
-        }
-    
-    def process(self, content: Union[str, bytes, Path], modality: ModalityType = None) -> MultimodalContent:
-        if modality is None:
-            modality = self._detect_modality(content)
-        adapter = self._adapters.get(modality)
-        if not adapter:
-            raise ValueError(f"Unsupported modality: {modality}")
-        return adapter.process(content)
-    
-    def _detect_modality(self, content: Union[str, bytes, Path]) -> ModalityType:
-        path = Path(content) if isinstance(content, (str, Path)) else None
-        if path and path.suffix:
-            ext = path.suffix.lower().lstrip(".")
-            if ext in ("png", "jpg", "jpeg", "gif", "webp"):
-                return ModalityType.IMAGE
-            elif ext == "pdf":
-                return ModalityType.PDF
-            elif ext in ("mp3", "wav", "flac", "ogg"):
-                return ModalityType.AUDIO
-        return ModalityType.TEXT
+    def __init__(self, default_provider: str = "openai") -> None:
+        self.vision = VisionAdapter(default_provider)
+        self.pdf = PDFAdapter()
+        self.audio = AudioAdapter()
+
+    def process_image(self, content: Union[str, bytes, Path], provider: str = None) -> MultimodalContent:
+        return self.vision.process(content, provider)
+
+    def process_pdf(self, content: Union[str, bytes, Path]) -> MultimodalContent:
+        return self.pdf.process(content)
+
+    def process_audio(self, content: Union[str, bytes, Path]) -> MultimodalContent:
+        return self.audio.process(content)
 
 
-__all__ = ["ModalityType", "MultimodalContent", "VisionAdapter", "PDFAdapter", "AudioAdapter", "MultimodalManager"]
+__all__ = ["ModalityType", "MultimodalContent", "BaseMultimodalAdapter", "VisionAdapter", "PDFAdapter", "AudioAdapter", "MultimodalManager"]
