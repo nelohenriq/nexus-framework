@@ -13,6 +13,9 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 
+# Use monotonic time for rate limiting (more reliable than time.time())
+_TIME = time.monotonic
+
 
 @dataclass
 class RateLimitStatus:
@@ -43,10 +46,10 @@ class RateLimiter:
         Blocks if rate limited until slot available.
         Returns True if acquired, False if timeout.
         """
-        start_time = time.time()
+        start_time = _TIME()
         while True:
             with self._lock:
-                now = time.time()
+                now = _TIME()
                 window_start = now - 60.0
                 while self._requests and self._requests[0] < window_start:
                     self._requests.popleft()
@@ -56,7 +59,7 @@ class RateLimiter:
                     return True
                 self._total_limited += 1
             if timeout is not None:
-                elapsed = time.time() - start_time
+                elapsed = _TIME() - start_time
                 if elapsed >= timeout:
                     return False
             time.sleep(0.1)
@@ -64,7 +67,7 @@ class RateLimiter:
     def try_acquire(self) -> bool:
         """Non-blocking attempt to acquire."""
         with self._lock:
-            now = time.time()
+            now = _TIME()
             window_start = now - 60.0
             while self._requests and self._requests[0] < window_start:
                 self._requests.popleft()
@@ -77,7 +80,7 @@ class RateLimiter:
     def get_status(self) -> RateLimitStatus:
         """Get current rate limit status."""
         with self._lock:
-            now = time.time()
+            now = _TIME()
             window_start = now - 60.0
             while self._requests and self._requests[0] < window_start:
                 self._requests.popleft()
