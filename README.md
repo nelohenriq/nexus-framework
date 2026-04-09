@@ -180,7 +180,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [Hermes Agent](https://github.com/happenslol/hermes) - SKILL.md format, SQLite memory
+- [Hermes Agent](https://github.com/NousResearch/hermes-agent) - SKILL.md format, SQLite memory
 - [OpenClaw](https://github.com/openclaw/openclaw) - SOUL.md, multi-channel inspiration
 - [Agent Zero](https://github.com/agent0ai/agent-zero) - Multi-agent hierarchy, tool abstraction
 - [OpenFang](https://github.com/RightNow-AI/openfang) - Hexagonal architecture, security layers
