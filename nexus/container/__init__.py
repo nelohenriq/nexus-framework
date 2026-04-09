@@ -13,11 +13,13 @@ from typing import Any, Callable, TypeVar, get_type_hints
 
 T = TypeVar("T")
 
+
 class Lifecycle(str, Enum):
     """Adapter lifecycle options."""
     SINGLETON = "singleton"
     SCOPED = "scoped"
     TRANSIENT = "transient"
+
 
 @dataclass
 class Binding:
@@ -27,6 +29,7 @@ class Binding:
     lifecycle: Lifecycle = Lifecycle.SINGLETON
     instance: Any = None
     factory: Callable[[], T] | None = None
+
 
 class AdapterRegistry:
     """Registry for dynamic adapter discovery."""
@@ -51,8 +54,12 @@ class AdapterRegistry:
     def list_all(self) -> dict[str, type]:
         return self._adapters.copy()
 
+
 class DIContainer:
     """Dependency Injection Container."""
+    # Class-level cache for type hints (optimization)
+    _type_hints_cache: dict[type, dict] = {}
+
     def __init__(self) -> None:
         self._bindings: dict[type, Binding] = {}
         self._singletons: dict[type, Any] = {}
@@ -91,7 +98,10 @@ class DIContainer:
     def _create(self, adapter: type | Callable[..., T]) -> T:
         if callable(adapter) and not inspect.isclass(adapter):
             return adapter()
-        hints = get_type_hints(adapter.__init__)
+        # Use cached type hints for performance
+        if adapter not in self._type_hints_cache:
+            self._type_hints_cache[adapter] = get_type_hints(adapter.__init__)
+        hints = self._type_hints_cache[adapter]
         kwargs = {}
         for name, hint in hints.items():
             if name == "return" or name == "self":
@@ -115,6 +125,7 @@ class DIContainer:
     def create_scope(self) -> "DIScope":
         return DIScope(self)
 
+
 class DIScope:
     """Scoped container for request-scoped instances."""
     def __init__(self, container: DIContainer) -> None:
@@ -128,5 +139,6 @@ class DIScope:
                 self._scoped_instances[port] = self._container._create(binding.adapter)
             return self._scoped_instances[port]
         return self._container.resolve(port)
+
 
 __all__ = ["Lifecycle", "Binding", "AdapterRegistry", "DIContainer", "DIScope"]
