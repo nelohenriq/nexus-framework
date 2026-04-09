@@ -1,0 +1,39 @@
+# NEXUS Framework Configuration Example
+# This is a simple configuration file for the NEXUS framework.
+
+# LLM Provider Configuration
+llm:
+ # Provider: openai, ollama, anthropic, openai-compatible
+ provider: openai
+ model: gpt-4-turbo
+ # Use environment variable for API key
+ api_key: ${OPENAI_API_KEY}
+ temperature: 0.7
+ max_tokens: 4096
+
+# Alternative: Use local Ollama (no API key needed)
+# llm:
+# provider: ollama
+# model: llama3.2
+
+# Alternative: Use OpenAI-compatible endpoint (vLLM, LM Studio)
+# llm:
+# provider: openai-compatible
+# model: my-model
+# base_url: http://localhost:8000/v1
+
+# Memory Configuration
+memory:
+ provider: sqlite
+ path: ./nexus.db
+ vector_enabled: true
+
+# Security Configuration
+security:
+ sandbox_enabled: true
+ audit_logging: true
+ rate_limit_rpm: 60
+
+# Agent Settings
+agent_name: nexus-agent
+log_level: INFO
