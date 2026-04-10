@@ -515,3 +515,209 @@ nexus doctor
 ## License
 
 MIT License - See LICENSE file for details.
+---
+
+## CLI Commands
+
+### Setup & Configuration
+
+#### `nexus setup`
+
+Interactive configuration wizard for setting up NEXUS.
+
+```bash
+nexus setup [--config PATH]
+```
+
+**Steps:**
+1. Select LLM Provider (OpenAI, Anthropic, Ollama, NVIDIA NIM, OpenAI-Compatible)
+2. Choose Model
+3. Enter API Key (or use environment variable)
+4. Configure Temperature
+5. Configure Efficiency Settings (caching, rate limits, budget)
+6. Configure Security Settings (layers)
+
+**Example:**
+```bash
+$ nexus setup
+============================================================
+ NEXUS Framework Setup Wizard
+============================================================
+
+[Step 1] LLM Provider Configuration
+----------------------------------------
+
+Available providers:
+ 1. OpenAI
+ 2. Anthropic
+ 3. Ollama (Local)
+ 4. NVIDIA NIM
+ 5. OpenAI-Compatible
+
+Select provider [1-5]: 1
+...
+```
+
+#### `nexus init`
+
+Initialize a new NEXUS project.
+
+```bash
+nexus init [PATH] [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--name, -n` | Agent name (default: nexus-agent) |
+| `--provider, -p` | LLM provider (default: ollama) |
+| `--model, -m` | Model name (default: llama3.2) |
+| `--force, -f` | Overwrite existing project |
+
+---
+
+### Provider Management
+
+#### `nexus provider add`
+
+Add a new LLM provider with automatic verification.
+
+```bash
+nexus provider add [--config PATH]
+```
+
+**Features:**
+- Tests connection before saving
+- Validates API key
+- Confirms model availability
+
+**Supported Providers:**
+
+| Provider | Models | Verification |
+|----------|--------|-------------|
+| OpenAI | gpt-4, gpt-4-turbo, gpt-3.5-turbo | ✅ API endpoint |
+| Anthropic | claude-3-opus, claude-3-sonnet, claude-3-haiku | ✅ API key check |
+| Ollama | llama2, codellama, mistral | ✅ Local connection |
+| NVIDIA NIM | llama3-8b, deepseek-coder-6.7b | ✅ API endpoint |
+| OpenAI-Compatible | Custom | ✅ Custom endpoint |
+
+#### `nexus provider list`
+
+List currently configured provider.
+
+```bash
+nexus provider list [--config PATH]
+```
+
+**Output:**
+```
+Configured Provider
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Setting ┃ Value ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ Provider │ openai │
+│ Model │ gpt-4 │
+│ API Base │ https://api.openai.com/v1 │
+└───────────┴──────────────────────┘
+```
+
+#### `nexus provider verify`
+
+Verify provider connectivity.
+
+```bash
+nexus provider verify [--config PATH]
+```
+
+**Checks:**
+- Validates API key
+- Tests endpoint availability
+- Lists available models
+
+---
+
+### Diagnostics
+
+#### `nexus doctor`
+
+Run diagnostics on NEXUS configuration.
+
+```bash
+nexus doctor [--config PATH]
+```
+
+**Checks:**
+- Configuration file exists
+- Configuration loads correctly
+- LLM adapter creates successfully
+- Provider connectivity
+
+#### `nexus version`
+
+Show NEXUS version.
+
+```bash
+nexus version
+```
+
+---
+
+### Running Agents
+
+#### `nexus run`
+
+Run the NEXUS agent.
+
+```bash
+nexus run [OPTIONS]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--config, -c` | Configuration file path |
+| `--prompt, -p` | Initial prompt |
+| `--interactive/-i` | Interactive mode (default: True) |
+| `--batch/-b` | Batch mode |
+
+---
+
+## Configuration File
+
+### YAML Structure
+
+```yaml
+# NEXUS Configuration
+llm:
+ provider: openai
+ model: gpt-4
+ api_key: ${OPENAI_API_KEY}
+ api_base: https://api.openai.com/v1
+ temperature: 0.7
+ max_tokens: 4096
+
+memory:
+ provider: sqlite
+ path: ./nexus.db
+
+security:
+ sandbox_enabled: true
+ audit_logging: true
+
+efficiency:
+ cache_enabled: true
+ max_rpm: 60
+ budget:
+ max_tokens: 100000
+
+agent_name: my-agent
+log_level: INFO
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI API key |
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `NVIDIA_API_KEY` | NVIDIA NIM API key |
+| `LLM_API_KEY` | Generic API key |
+| `LLM_BASE_URL` | Generic API endpoint |

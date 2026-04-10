@@ -188,3 +188,74 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with ❤️ for the AI agent community**
+
+---
+
+## CLI Commands Reference
+
+### Setup & Configuration
+
+| Command | Description |
+|---------|-------------|
+| `nexus setup` | Interactive configuration wizard |
+| `nexus init [PATH]` | Initialize a new project |
+| `nexus doctor` | Run diagnostics |
+| `nexus version` | Show version |
+
+### Provider Management
+
+| Command | Description |
+|---------|-------------|
+| `nexus provider add` | Add provider with verification |
+| `nexus provider list` | List configured providers |
+| `nexus provider verify` | Test provider connectivity |
+
+### Running Agents
+
+| Command | Description |
+|---------|-------------|
+| `nexus run` | Run the NEXUS agent |
+
+### Quick Start with Setup Wizard
+
+```bash
+# Interactive setup
+nexus setup
+
+# Or initialize a project
+nexus init my-project --provider openai --model gpt-4
+
+# Verify configuration
+nexus doctor
+
+# Run the agent
+nexus run
+```
+
+### Supported Providers
+
+| Provider | Models | Verification |
+|----------|--------|-------------|
+| **OpenAI** | gpt-4, gpt-4-turbo, gpt-3.5-turbo | ✅ API endpoint |
+| **Anthropic** | claude-3-opus, claude-3-sonnet, claude-3-haiku | ✅ API key check |
+| **Ollama** | llama2, codellama, mistral | ✅ Local connection |
+| **NVIDIA NIM** | llama3-8b-instruct, deepseek-coder-6.7b-instruct | ✅ API endpoint |
+| **OpenAI-Compatible** | Custom models | ✅ Custom endpoint |
+
+---
+
+## Project Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Python Files** | 40+ |
+| **Total Lines** | ~3,500+ |
+| **Phases Complete** | 6/6 |
+| **Examples** | 5 |
+| **Documentation** | 5+ files |
+
+---
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
