@@ -142,35 +142,42 @@ python nexus_demo.py
 
 ```
 nexus/
-├── core/           # Agent loop, memory, context
-│   ├── messages.py     # Message types and formatting
-│   ├── memory.py       # SQLite-based memory manager
-│   └── context.py      # Agent context with checkpointing
-├── efficiency/     # Built-in optimization
-│   ├── prompt_cache.py # Prompt caching system
-│   ├── rate_limiter.py # Rate limiting
-│   └── budget_enforcer.py # Budget tracking
-├── security/       # 16 security layers
-├── multiagent/     # Multi-agent orchestration
-│   ├── registry.py     # Agent registration
-│   ├── messaging.py    # Inter-agent communication
-│   ├── persistence.py  # State persistence
-│   └── workflow.py     # Workflow orchestration
-├── autonomous/     # Self-managing features
-│   ├── health_monitor.py   # Health monitoring
-│   ├── self_healing.py     # Auto-recovery
-│   ├── task_scheduler.py   # Task scheduling
-│   └── learning.py         # Learning engine
-├── adapters/       # LLM & channel adapters
-│   └── llm/
-│       ├── openai.py       # OpenAI adapter
-│       ├── anthropic.py    # Anthropic adapter
-│       ├── ollama.py       # Ollama adapter
-│       └── openai_compatible.py # Generic adapter
-├── container/      # Dependency injection
-├── config/         # Configuration management
-└── cli/            # Command-line interface
-    └── setup_wizard.py  # Interactive setup
+├── core/ # Agent loop, memory, context
+│ ├── agent.py # Agent execution loop (Phase 7)
+│ ├── tools.py # Tool registry with permissions (Phase 7)
+│ ├── skills.py # SKILL.md parser (Phase 7)
+│ ├── messages.py # Message types and formatting
+│ ├── memory.py # SQLite-based memory manager
+│ └── context.py # Agent context with checkpointing
+├── sandbox/ # Secure execution (Phase 7)
+│ └── docker_sandbox.py # Docker-based code sandbox
+├── acl/ # Anti-Corruption Layer (Phase 7)
+│ └── acl.py # Framework translation layer
+├── efficiency/ # Built-in optimization
+│ ├── prompt_cache.py # Prompt caching system
+│ ├── rate_limiter.py # Rate limiting
+│ └── budget_enforcer.py # Budget tracking
+├── security/ # 16 security layers
+├── multiagent/ # Multi-agent orchestration
+│ ├── registry.py # Agent registration
+│ ├── messaging.py # Inter-agent communication
+│ ├── persistence.py # State persistence
+│ └── workflow.py # Workflow orchestration
+├── autonomous/ # Self-managing features
+│ ├── health_monitor.py # Health monitoring
+│ ├── self_healing.py # Auto-recovery
+│ ├── task_scheduler.py # Task scheduling
+│ └── learning.py # Learning engine
+├── adapters/ # LLM & channel adapters
+│ └── llm/
+│ ├── openai.py # OpenAI adapter
+│ ├── anthropic.py # Anthropic adapter
+│ ├── ollama.py # Ollama adapter
+│ └── openai_compatible.py # Generic adapter
+├── container/ # Dependency injection
+├── config/ # Configuration management
+└── cli/ # Command-line interface
+ └── setup_wizard.py # Interactive setup
 ```
 
 ---
@@ -200,6 +207,7 @@ nexus/
 | **Phase 4** | ✅ Complete | Security & Multimodal | SecurityManager (16 layers), Multimodal Adapters |
 | **Phase 5** | ✅ Complete | Multi-Agent | AgentRegistry, MessageBus, PersistenceManager |
 | **Phase 6** | ✅ Complete | Autonomous | HealthMonitor, SelfHealing, TaskScheduler, LearningEngine |
+| **Phase 7** | ✅ Complete | Core Execution Engine | AgentLoop, ToolRegistry, SKILL.md Parser, DockerSandbox, ACL |
 
 ---
 
@@ -207,10 +215,11 @@ nexus/
 
 | Metric | Value |
 |--------|-------|
-| **Python Files** | 40+ |
-| **Total Lines** | ~3,000+ |
+| **Python Files** | 45+ |
+| **Total Lines** | ~4,500+ |
 | **Examples** | 5 |
 | **Documentation** | API Reference, Getting Started, Architecture |
+| **Phases Complete** | 7/7 (100%) |
 | **Test Coverage** | Unit, Integration, E2E structure ready |
 | **License** | MIT |
 
