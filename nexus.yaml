@@ -1,0 +1,23 @@
+agent_name: nexus-agent
+efficiency:
+  budget: null
+  cache_enabled: true
+  max_rpm: 40
+  max_tokens: 100000
+llm:
+  api_base: https://integrate.api.nvidia.com/v1
+  api_key: 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
+  max_tokens: 4096
+  model: moonshotai/kimi-k2.5
+  provider: nvidia
+  temperature: 0.7
+log_level: INFO
+memory:
+  path: ./nexus.db
+  provider: sqlite
+security:
+  enabled: true
+  layers:
+  - input_validation
+  - authentication
+  - authorization

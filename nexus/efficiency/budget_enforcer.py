@@ -77,6 +77,10 @@ class BudgetEnforcer:
                 message=message
             )
 
+    def track_usage(self, tokens: int) -> BudgetStatus:
+        """Alias for track() method."""
+        return self.track(tokens)
+
     def _calculate_percent(self) -> float:
         if self._config.max_tokens:
             return self._tokens_used / self._config.max_tokens
