@@ -21,25 +21,22 @@ class MemoryType(Enum):
             return cls.SEMANTIC
 
 
-@dataclass
+@dataclass(slots=True)
 class Tunnel:
     source_id: str
     target_id: str
     relationship: str
     strength: float = 1.0
     metadata: Dict[str, Any] = field(default_factory=dict)
+    _dict_cache: Optional[Dict] = field(default=None, init=False, repr=False)
 
     def to_dict(self):
-        return {
-            "source_id": self.source_id,
-            "target_id": self.target_id,
-            "relationship": self.relationship,
-            "strength": self.strength,
-            "metadata": self.metadata
-        }
+        if self._dict_cache is None:
+            self._dict_cache = {"source_id": self.source_id, "target_id": self.target_id, "relationship": self.relationship, "strength": self.strength, "metadata": self.metadata}
+        return self._dict_cache
 
 
-@dataclass
+@dataclass(slots=True)
 class Memory:
     id: str
     content: str
@@ -47,30 +44,19 @@ class Memory:
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     importance: float = 1.0
     metadata: Dict[str, Any] = field(default_factory=dict)
+    _dict_cache: Optional[Dict] = field(default=None, init=False, repr=False)
 
     def to_dict(self):
-        return {
-            "id": self.id,
-            "content": self.content,
-            "memory_type": self.memory_type.value,
-            "timestamp": self.timestamp,
-            "importance": self.importance,
-            "metadata": self.metadata
-        }
+        if self._dict_cache is None:
+            self._dict_cache = {"id": self.id, "content": self.content, "memory_type": self.memory_type.value, "timestamp": self.timestamp, "importance": self.importance, "metadata": self.metadata}
+        return self._dict_cache
 
     @classmethod
     def from_dict(cls, data):
-        return cls(
-            id=data["id"],
-            content=data["content"],
-            memory_type=MemoryType.from_string(data.get("memory_type", "semantic")),
-            timestamp=data.get("timestamp", datetime.now().isoformat()),
-            importance=data.get("importance", 1.0),
-            metadata=data.get("metadata", {})
-        )
+        return cls(id=data["id"], content=data["content"], memory_type=MemoryType.from_string(data.get("memory_type", "semantic")), timestamp=data.get("timestamp", datetime.now().isoformat()), importance=data.get("importance", 1.0), metadata=data.get("metadata", {}))
 
 
-@dataclass
+@dataclass(slots=True)
 class Hall:
     name: str
     memory_type: MemoryType
@@ -84,14 +70,15 @@ class Hall:
     def search(self, query: str, top_k: int = 5):
         results = []
         query_lower = query.lower()
-        for memory in self.memories.values():
+        memories = self.memories
+        for mid, memory in memories.items():
             if query_lower in memory.content.lower():
                 results.append(memory)
         results.sort(key=lambda x: x.importance, reverse=True)
         return results[:top_k]
 
 
-@dataclass
+@dataclass(slots=True)
 class Room:
     name: str
     description: str = ""
@@ -108,7 +95,7 @@ class Room:
         return self.halls[hall].add_memory(memory)
 
 
-@dataclass
+@dataclass(slots=True)
 class Wing:
     name: str
     description: str = ""
@@ -120,25 +107,23 @@ class Wing:
         return self.rooms[name]
 
 
-@dataclass
+@dataclass(slots=True)
 class Palace:
     wings: Dict[str, Wing] = field(default_factory=dict)
     name: str = "Memory Palace"
 
     def __post_init__(self):
         if not self.wings:
-            self.wings = {
-                "People": Wing(name="People"),
-                "Projects": Wing(name="Projects"),
-                "Concepts": Wing(name="Concepts")
-            }
+            self.wings = {"People": Wing(name="People"), "Projects": Wing(name="Projects"), "Concepts": Wing(name="Concepts")}
 
     def add_memory(self, wing: str, room: str, hall: str, memory: Memory):
-        if wing not in self.wings:
-            self.wings[wing] = Wing(name=wing)
-        if room not in self.wings[wing].rooms:
-            self.wings[wing].rooms[room] = Room(name=room)
-        return self.wings[wing].rooms[room].add_memory(memory, hall)
+        wings = self.wings
+        if wing not in wings:
+            wings[wing] = Wing(name=wing)
+        rooms = wings[wing].rooms
+        if room not in rooms:
+            rooms[room] = Room(name=room)
+        return rooms[room].add_memory(memory, hall)
 
     def search(self, query: str, top_k: int = 10):
         results = []

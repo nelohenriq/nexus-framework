@@ -14,79 +14,57 @@ Memory Tiers:
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime
+from functools import lru_cache
 import json
 import hashlib
 
 
-@dataclass
+@dataclass(slots=True)
 class MemoryLayer:
     """Base class for memory layers."""
     name: str
     token_budget: int
     always_loaded: bool = False
     data: Dict[str, Any] = field(default_factory=dict)
+    _token_cache: Optional[int] = field(default=None, init=False, repr=False)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "name": self.name,
-            "token_budget": self.token_budget,
-            "always_loaded": self.always_loaded,
-            "data": self.data
-        }
+        return {"name": self.name, "token_budget": self.token_budget, "always_loaded": self.always_loaded, "data": self.data}
 
     def estimate_tokens(self) -> int:
-        """Estimate token count for this layer."""
-        content = json.dumps(self.data, default=str)
-        # Approximate: ~4 chars per token
-        return len(content) // 4
+        """Estimate token count with caching."""
+        if self._token_cache is None:
+            content = json.dumps(self.data, default=str)
+            self._token_cache = len(content) // 4
+        return self._token_cache
 
 
-@dataclass
+@dataclass(slots=True)
 class L0IdentityLayer(MemoryLayer):
-    """L0: Identity - Who am I, current task (~50 tokens, always loaded).
-
-    Contains:
-    - Agent ID and role
-    - Current task description
-    - Session context
-    """
+    """L0: Identity - Who am I, current task (~50 tokens, always loaded)."""
     agent_id: str = ""
     role: str = ""
     current_task: str = ""
     session_start: str = field(default_factory=lambda: datetime.now().isoformat())
+    _dict_cache: Optional[Dict] = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         self.name = "L0_Identity"
         self.token_budget = 50
         self.always_loaded = True
-        self.data = {
-            "agent_id": self.agent_id,
-            "role": self.role,
-            "current_task": self.current_task
-        }
+        self.data = {"agent_id": self.agent_id, "role": self.role, "current_task": self.current_task}
 
     def to_dict(self) -> Dict[str, Any]:
-        d = super().to_dict()
-        d.update({
-            "agent_id": self.agent_id,
-            "role": self.role,
-            "current_task": self.current_task,
-            "session_start": self.session_start
-        })
-        return d
+        if self._dict_cache is None:
+            self._dict_cache = {"name": self.name, "token_budget": self.token_budget, "always_loaded": self.always_loaded, "data": self.data, "agent_id": self.agent_id, "role": self.role, "current_task": self.current_task, "session_start": self.session_start}
+        return self._dict_cache
 
 
-@dataclass
+@dataclass(slots=True)
 class L1CriticalFactsLayer(MemoryLayer):
-    """L1: Critical Facts - Key information (~120 tokens, always loaded).
-
-    Contains:
-    - User preferences
-    - Project context
-    - Critical constraints
-    - Active goals
-    """
+    """L1: Critical Facts - Key information (~120 tokens, always loaded)."""
     facts: Dict[str, Any] = field(default_factory=dict)
+    _dict_cache: Optional[Dict] = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         self.name = "L1_CriticalFacts"
@@ -98,21 +76,16 @@ class L1CriticalFactsLayer(MemoryLayer):
         """Add a critical fact."""
         self.facts[key] = value
         self.data[key] = value
+        self._dict_cache = None
+        self._token_cache = None
 
     def get_fact(self, key: str) -> Optional[Any]:
-        """Get a critical fact."""
         return self.facts.get(key)
 
 
-@dataclass
+@dataclass(slots=True)
 class L2RoomRecallLayer(MemoryLayer):
-    """L2: Room Recall - Recent conversations (on-demand).
-
-    Contains:
-    - Recent messages
-    - Working memory
-    - Current session data
-    """
+    """L2: Room Recall - Recent conversations (on-demand)."""
     messages: List[Dict[str, Any]] = field(default_factory=list)
     max_messages: int = 100
 
@@ -123,34 +96,22 @@ class L2RoomRecallLayer(MemoryLayer):
         self.data = {"messages": self.messages}
 
     def add_message(self, role: str, content: str, metadata: Optional[Dict] = None):
-        """Add a message to working memory."""
-        msg = {
-            "role": role,
-            "content": content,
-            "timestamp": datetime.now().isoformat()
-        }
+        msg = {"role": role, "content": content, "timestamp": datetime.now().isoformat()}
         if metadata:
             msg.update(metadata)
         self.messages.append(msg)
-        # Keep within limits
         if len(self.messages) > self.max_messages:
             self.messages = self.messages[-self.max_messages:]
-        self.data["messages"] = self.messages
+            self.data["messages"] = self.messages
+        self._token_cache = None
 
     def get_recent(self, n: int = 10) -> List[Dict[str, Any]]:
-        """Get N most recent messages."""
         return self.messages[-n:]
 
 
-@dataclass
+@dataclass(slots=True)
 class L3DeepSearchLayer(MemoryLayer):
-    """L3: Deep Search - Historical data (on-demand).
-
-    Contains:
-    - Historical conversations
-    - Knowledge base
-    - Semantic search index
-    """
+    """L3: Deep Search - Historical data (on-demand)."""
     index_path: Optional[str] = None
     knowledge_base: Dict[str, Any] = field(default_factory=dict)
 
@@ -161,37 +122,23 @@ class L3DeepSearchLayer(MemoryLayer):
         self.data = {"knowledge_base": self.knowledge_base}
 
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Search knowledge base (placeholder for vector search)."""
-        # Simple keyword search for now
         results = []
         query_lower = query.lower()
-        for key, value in self.knowledge_base.items():
+        kb = self.knowledge_base
+        for key, value in kb.items():
             if query_lower in key.lower() or query_lower in str(value).lower():
                 results.append({"key": key, "value": value})
         return results[:top_k]
 
     def add_knowledge(self, key: str, value: Any):
-        """Add knowledge to the base."""
         self.knowledge_base[key] = value
         self.data["knowledge_base"] = self.knowledge_base
+        self._token_cache = None
 
 
-@dataclass
+@dataclass(slots=True)
 class MemoryStack:
-    """Complete L0-L3 Memory Stack.
-
-    Implements efficient tiered memory that reduces context from thousands
-    of tokens to ~170 tokens for session start.
-
-    Usage:
-        stack = MemoryStack()
-        stack.l0 = L0IdentityLayer(agent_id="agent_001", role="developer")
-        stack.l1.add_fact("user_preference", "concise responses")
-        stack.l2.add_message("user", "Hello!")
-
-        # Get minimal context for session start
-        context = stack.get_session_context()  # ~170 tokens
-    """
+    """Complete L0-L3 Memory Stack."""
     l0: Optional[L0IdentityLayer] = None
     l1: Optional[L1CriticalFactsLayer] = None
     l2: Optional[L2RoomRecallLayer] = None
@@ -208,50 +155,30 @@ class MemoryStack:
             self.l3 = L3DeepSearchLayer()
 
     def get_session_context(self) -> Dict[str, Any]:
-        """Get minimal context for session start (~170 tokens).
-
-        Returns only L0 and L1 layers which are always loaded.
-        L2 and L3 are loaded on-demand.
-        """
-        return {
-            "l0": self.l0.to_dict() if self.l0 else {},
-            "l1": self.l1.to_dict() if self.l1 else {}
-        }
+        l0 = self.l0
+        l1 = self.l1
+        return {"l0": l0.to_dict() if l0 else {}, "l1": l1.to_dict() if l1 else {}}
 
     def get_full_context(self) -> Dict[str, Any]:
-        """Get full context including all layers."""
-        return {
-            "l0": self.l0.to_dict() if self.l0 else {},
-            "l1": self.l1.to_dict() if self.l1 else {},
-            "l2": self.l2.to_dict() if self.l2 else {},
-            "l3": self.l3.to_dict() if self.l3 else {}
-        }
+        l0, l1, l2, l3 = self.l0, self.l1, self.l2, self.l3
+        return {"l0": l0.to_dict() if l0 else {}, "l1": l1.to_dict() if l1 else {}, "l2": l2.to_dict() if l2 else {}, "l3": l3.to_dict() if l3 else {}}
 
     def estimate_total_tokens(self) -> int:
-        """Estimate total token count across all layers."""
         total = 0
-        for layer in [self.l0, self.l1, self.l2, self.l3]:
+        for layer in (self.l0, self.l1, self.l2, self.l3):
             if layer:
                 total += layer.estimate_tokens()
         return total
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "l0": self.l0.to_dict() if self.l0 else None,
-            "l1": self.l1.to_dict() if self.l1 else None,
-            "l2": self.l2.to_dict() if self.l2 else None,
-            "l3": self.l3.to_dict() if self.l3 else None
-        }
+        l0, l1, l2, l3 = self.l0, self.l1, self.l2, self.l3
+        return {"l0": l0.to_dict() if l0 else None, "l1": l1.to_dict() if l1 else None, "l2": l2.to_dict() if l2 else None, "l3": l3.to_dict() if l3 else None}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MemoryStack":
         stack = cls()
         if "l0" in data and data["l0"]:
-            stack.l0 = L0IdentityLayer(
-                agent_id=data["l0"].get("agent_id", ""),
-                role=data["l0"].get("role", ""),
-                current_task=data["l0"].get("current_task", "")
-            )
+            stack.l0 = L0IdentityLayer(agent_id=data["l0"].get("agent_id", ""), role=data["l0"].get("role", ""), current_task=data["l0"].get("current_task", ""))
         if "l1" in data and data["l1"]:
             stack.l1 = L1CriticalFactsLayer(facts=data["l1"].get("data", {}))
         if "l2" in data and data["l2"]:
@@ -262,7 +189,6 @@ class MemoryStack:
 
 
 def create_memory_stack(agent_id: str = "", role: str = "") -> MemoryStack:
-    """Create a new memory stack with optional identity."""
     stack = MemoryStack()
     if agent_id or role:
         stack.l0 = L0IdentityLayer(agent_id=agent_id, role=role)
