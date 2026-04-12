@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-@dataclass
+@dataclass(slots=True)
 class ContextEntry:
     timestamp: str
     agent_id: str
@@ -24,7 +24,7 @@ class ContextEntry:
         return "\n".join(lines)
 
 
-@dataclass
+@dataclass(slots=True)
 class DecisionEntry:
     timestamp: str
     decision: str
@@ -35,7 +35,7 @@ class DecisionEntry:
         return f"## Decision: {self.timestamp}\n\nDecision: {self.decision}\nReasoning: {self.reasoning}\nOutcome: {self.outcome}\n"
 
 
-@dataclass
+@dataclass(slots=True)
 class LearningEntry:
     timestamp: str
     category: str

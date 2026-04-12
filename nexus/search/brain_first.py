@@ -6,7 +6,7 @@ from datetime import datetime
 import json
 
 
-@dataclass
+@dataclass(slots=True)
 class LookupResult:
     source: str
     found: bool

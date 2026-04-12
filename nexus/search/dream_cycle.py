@@ -7,7 +7,7 @@ import threading
 import time as time_module
 
 
-@dataclass
+@dataclass(slots=True)
 class DreamTask:
     name: str
     func: Callable
@@ -16,7 +16,7 @@ class DreamTask:
     enabled: bool = True
 
 
-@dataclass
+@dataclass(slots=True)
 class DreamResult:
     task_name: str
     success: bool

@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(slots=True)
 class RRFConfig:
     k: int = 60
     top_k: int = 10

@@ -25,7 +25,7 @@ class EntityType(Enum):
             return cls.PERSON
 
 
-@dataclass
+@dataclass(slots=True)
 class Entity:
     text: str
     entity_type: EntityType
@@ -35,15 +35,10 @@ class Entity:
     end: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "text": self.text,
-            "entity_type": self.entity_type.value,
-            "normalized": self.normalized,
-            "confidence": self.confidence
-        }
+        return {"text": self.text, "entity_type": self.entity_type.value, "normalized": self.normalized, "confidence": self.confidence}
 
 
-@dataclass
+@dataclass(slots=True)
 class EntityDetectionResult:
     text: str
     entities: List[Entity]
@@ -61,14 +56,16 @@ class EntityDetector:
 
     def detect(self, text: str) -> EntityDetectionResult:
         entities = []
-        for match in self.EMAIL_PATTERN.finditer(text):
-            entities.append(Entity(text=match.group(), entity_type=EntityType.EMAIL, normalized=match.group().lower(), start=match.start(), end=match.end()))
-        for match in self.URL_PATTERN.finditer(text):
-            entities.append(Entity(text=match.group(), entity_type=EntityType.URL, normalized=match.group(), start=match.start(), end=match.end()))
-        for match in self.TECH_PATTERN.finditer(text):
-            entities.append(Entity(text=match.group(), entity_type=EntityType.TECHNOLOGY, normalized=match.group().lower(), start=match.start(), end=match.end()))
-        for match in self.MONEY_PATTERN.finditer(text):
-            entities.append(Entity(text=match.group(), entity_type=EntityType.MONEY, normalized=match.group(), start=match.start(), end=match.end()))
+        email_p, url_p, phone_p, money_p, tech_p = self.EMAIL_PATTERN, self.URL_PATTERN, self.PHONE_PATTERN, self.MONEY_PATTERN, self.TECH_PATTERN
+        EntityType_ = EntityType
+        for match in email_p.finditer(text):
+            entities.append(Entity(text=match.group(), entity_type=EntityType_.EMAIL, normalized=match.group().lower(), start=match.start(), end=match.end()))
+        for match in url_p.finditer(text):
+            entities.append(Entity(text=match.group(), entity_type=EntityType_.URL, normalized=match.group(), start=match.start(), end=match.end()))
+        for match in tech_p.finditer(text):
+            entities.append(Entity(text=match.group(), entity_type=EntityType_.TECHNOLOGY, normalized=match.group().lower(), start=match.start(), end=match.end()))
+        for match in money_p.finditer(text):
+            entities.append(Entity(text=match.group(), entity_type=EntityType_.MONEY, normalized=match.group(), start=match.start(), end=match.end()))
         entities.sort(key=lambda e: e.start)
         return EntityDetectionResult(text=text, entities=entities)
 

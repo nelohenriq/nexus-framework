@@ -13,7 +13,7 @@ class SearchMethod(Enum):
     SEMANTIC = "semantic"
 
 
-@dataclass
+@dataclass(slots=True)
 class SearchResult:
     id: str
     content: str
@@ -25,7 +25,7 @@ class SearchResult:
         return {"id": self.id, "content": self.content, "score": self.score, "method": self.method.value, "metadata": self.metadata}
 
 
-@dataclass
+@dataclass(slots=True)
 class HybridSearchResult:
     query: str
     results: List[SearchResult]

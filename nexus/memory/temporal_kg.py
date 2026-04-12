@@ -22,7 +22,7 @@ class RelationType(Enum):
     WORKS_FOR = "works_for"
 
 
-@dataclass
+@dataclass(slots=True)
 class TemporalFact:
     id: str
     subject: str
@@ -47,7 +47,7 @@ class TemporalFact:
         return True
 
 
-@dataclass
+@dataclass(slots=True)
 class Entity:
     name: str
     entity_type: str
@@ -80,7 +80,8 @@ class TemporalKnowledgeGraph:
 
     def query(self, subject=None, predicate=None, object_val=None, include_expired=False):
         results = []
-        for fact in self.facts.values():
+        facts = self.facts
+        for fact in facts.values():
             if subject and fact.subject != subject:
                 continue
             if predicate and fact.predicate != predicate:
