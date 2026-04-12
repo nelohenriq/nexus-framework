@@ -43,6 +43,64 @@ No external skills for core features - prompt caching, rate limiting, and budget
 | **Token Tracking** | Real-time usage monitoring | Visibility |
 | **TOON Compression** | ~40% token reduction | Context optimization |
 
+### 🧠 Phase 11: Memory Revolution
+
+Advanced memory system inspired by MemPalace and GBrain:
+
+| Feature | Description | Benefit |
+|---------|-------------|--------|
+| **L0-L3 Memory Stack** | Tiered context (Identity → Critical → Recent → Deep) | 40x more efficient |
+| **Palace Architecture** | Wings/Rooms/Halls/Tunnels organization | Intuitive knowledge storage |
+| **Temporal Knowledge Graph** | Facts with validity windows | Time-aware knowledge |
+| **Entity Detection** | Automatic capture from messages | Knowledge extraction |
+| **Three-File Memory** | context.md, decisions.md, learnings.md | Human-readable, git-trackable |
+
+### 🔍 Phase 12: Search & Knowledge
+
+Intelligent search and knowledge management:
+
+| Feature | Description | Benefit |
+|---------|-------------|--------|
+| **Hybrid Search** | Keyword + Vector + RRF fusion | +34% retrieval accuracy |
+| **Reciprocal Rank Fusion** | Combine multiple search results | Better relevance |
+| **Brain-First Lookup** | Check internal before external APIs | Reduced API calls |
+| **Dream Cycle** | Nightly autonomous maintenance | Self-improving knowledge |
+
+### 🎭 Phase 13: Agent Orchestration
+
+Multi-agent coordination and management:
+
+| Feature | Description | Benefit |
+|---------|-------------|--------|
+| **10 Agent Templates** | Pre-built configurations | Quick deployment |
+| **Heartbeat Monitoring** | Agent health tracking | Reliable execution |
+| **Task Queue** | Priority-based scheduling | Organized workflows |
+| **Daemon Polling** | Background task execution | Continuous operation |
+| **Unified Backend** | Single API for all LLM providers | Zero-glitch switching |
+
+### 🎯 Phase 14: Behavior & Quality
+
+Goal-driven execution and quality assurance:
+
+| Feature | Description | Benefit |
+|---------|-------------|--------|
+| **Goal-Driven Execution** | Success criteria, verification | Prevents AI mistakes |
+| **Surgical Changes** | Minimal diff detection | Targeted modifications |
+| **Ambiguity Detection** | Unclear instruction alerts | Asks for clarification |
+| **Diff Quality Gates** | Change verification | Prevents bad changes |
+
+### 🖥️ Phase 15: Modern CLI (OpenTUI Integration)
+
+Rich terminal interface with OpenTUI framework:
+
+| Feature | Description | Benefit |
+|---------|-------------|--------|
+| **Python-TypeScript Bridge** | Interface with OpenTUI core | Best of both worlds |
+| **Dashboard Component** | Agent status, metrics, logs | Real-time visibility |
+| **Setup Wizard TUI** | Interactive configuration | Easy onboarding |
+| **Real-time Monitoring** | Event streaming, pub/sub | Live updates |
+| **AI Automation** | pilotty integration for testing | Automated workflows |
+
 ### 🔐 Security-First Design (16 Layers)
 
 | # | Layer | Description |
@@ -74,8 +132,6 @@ Clean separation with dependency injection enables easy testing and extensibilit
 
 ---
 
-## 📦 Project Structure
-
 ```
 nexus/
 ├── core/ # Agent loop, memory, context, tools
@@ -85,6 +141,28 @@ nexus/
 │ ├── messages.py # Message types and formatting
 │ ├── memory.py # SQLite-based memory with connection pooling
 │ └── context.py # Agent context with checkpointing
+├── memory/ # Phase 11: Memory Revolution
+│ ├── stack.py # L0-L3 Memory Stack (40x efficiency)
+│ ├── palace.py # Palace Architecture (Wings/Rooms/Halls)
+│ ├── temporal_kg.py # Temporal Knowledge Graph
+│ ├── entity_detection.py # Automatic entity capture
+│ └── three_file.py # Three-File Memory (context/decisions/learnings)
+├── search/ # Phase 12: Search & Knowledge
+│ ├── hybrid.py # Hybrid Search (keyword + vector + RRF)
+│ ├── rrf.py # Reciprocal Rank Fusion
+│ ├── brain_first.py # Brain-First Lookup Protocol
+│ └── dream_cycle.py # Nightly Autonomous Maintenance
+├── orchestration/ # Phase 13: Agent Orchestration
+│ ├── templates.py # 10 Pre-built Agent Templates
+│ ├── heartbeat.py # Agent Health Monitoring
+│ ├── task_queue.py # Priority Task Queue
+│ ├── daemon.py # Background Polling
+│ └── unified_backend.py # Unified LLM Backend API
+├── behavior/ # Phase 14: Behavior & Quality
+│ ├── goals.py # Goal-Driven Execution
+│ ├── surgical.py # Surgical Change Detection
+│ ├── ambiguity.py # Ambiguity Detection
+│ └── diff_gates.py # Diff Quality Gates
 ├── efficiency/ # Built-in optimization layer
 │ ├── prompt_cache.py # Prompt caching system
 │ ├── rate_limiter.py # Local rate limiting
@@ -131,7 +209,13 @@ nexus/
 ├── container/ # Dependency injection
 ├── config/ # Configuration management
 ├── cli/ # Command-line interface
-│ └── setup_wizard.py # Interactive setup with provider verification
+│ ├── setup_wizard.py # Interactive setup with provider verification
+│ └── tui/ # Phase 15: Modern CLI (OpenTUI Integration)
+│ ├── bridge.py # Python-TypeScript Bridge
+│ ├── dashboard.py # Dashboard Component
+│ ├── wizard.py # Setup Wizard TUI
+│ ├── monitor.py # Real-time Monitoring
+│ └── automation.py # AI Automation (pilotty)
 └── utils/ # Utilities
  └── logging.py # Structured logging with structlog
 ```
