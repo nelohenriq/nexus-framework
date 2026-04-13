@@ -442,7 +442,223 @@ Each phase is considered complete when:
 | **M4: Release** | Week 16 | v4.0.0 production release |
 
 ---
+---
 
+## ⚠️ Risk Assessment & Mitigation
+
+| Risk | Probability | Impact | Mitigation Strategy |
+|------|-------------|--------|---------------------|
+| **Async migration breaks existing code** | Medium | High | Feature flag to toggle sync/async, comprehensive test suite first |
+| **tiktoken model mismatch** | Low | Medium | Provider-specific tokenizers, fallback to `.split()` on error |
+| **Bleach sanitization too strict** | Low | Low | Configurable allowlist for HTML, gradual rollout |
+| **Performance regression** | Medium | Medium | Benchmark before/after each change, rollback plan |
+| **Test coverage target unrealistic** | Medium | Low | Phased approach: 40% → 70% → 80% → 90% over 4 sprints |
+| **Breaking changes in production** | Low | High | Feature flags, semantic versioning, deprecation warnings |
+| **Dependency conflicts** | Low | Medium | Pin versions in requirements, use poetry/pip-tools |
+| **DAG workflow edge cases** | Medium | Medium | Feature flag for old list-based approach, extensive testing |
+
+---
+
+## 🔗 Task Dependency Graph
+
+### Critical Path (Must Complete in Order)
+
+```
+Sprint 1:
+  16.1 (Async self_healing) ──┐
+  16.2 (Async rate_limiter) ──┼──► 19.1-19.4 (Integration Testing)
+  16.3 (Async agent loop) ────┘
+
+  17.1 (Thread-safe registry) ──► 17.2-17.4 (Thread-safe modules)
+
+  18.1 (Tokenizer) ──► 18.2-18.4 (Tokenizer integration)
+
+Sprint 2 (depends on Sprint 1):
+  21.1 (Anthropic stream) ──► 21.2-21.4 (Stream integration)
+  [Requires: 16.1-16.3 async patterns]
+
+Sprint 3 (depends on Sprint 2):
+  24.1 (DAG workflows) ──► 24.2-24.4 (DAG optimization)
+  [Requires: 17.1 thread-safe registry]
+```
+
+### Parallelizable Tasks
+
+| Can Run Parallel | Dependencies |
+|------------------|--------------|
+| 16.1, 16.2, 16.3 (Async) | None |
+| 20.1-20.4 (Sanitization) | None (independent) |
+| 18.1-18.4 (Tokenizer) | None (independent) |
+| 22.1-22.4 (ACL Enhancement) | 17.1 (thread safety) |
+
+---
+
+## 🚦 Validation Gates (Sprint Transitions)
+
+### Sprint 1 → Sprint 2 Gate
+
+| Criterion | Target | Verification |
+|-----------|--------|--------------|
+| Async tests pass | 100% | `pytest tests/unit/test_async.py` |
+| Thread safety verified | No race conditions | `pytest tests/unit/test_thread_safety.py` |
+| Tokenizer accuracy | >99% | Unit test against known token counts |
+| No regressions | All existing tests pass | Full test suite |
+
+### Sprint 2 → Sprint 3 Gate
+
+| Criterion | Target | Verification |
+|-----------|--------|--------------|
+| Security audit passed | 0 critical/high | `bandit -r nexus/` |
+| XSS tests pass | All bypass attempts blocked | `pytest tests/security/test_sanitization.py` |
+| Anthropic streaming | Tool calls verified | Integration test with Claude API |
+| ACL permissions | Resource-level control | `pytest tests/acl/` |
+
+### Sprint 3 → Sprint 4 Gate
+
+| Criterion | Target | Verification |
+|-----------|--------|--------------|
+| Performance improved | No regressions | Benchmark comparison |
+| Cold start time | <200ms | Automated benchmark |
+| Memory footprint | <50MB | Memory profiling |
+| Cache efficiency | O(1) LRU | Performance test |
+
+### Sprint 4 → Release Gate
+
+| Criterion | Target | Verification |
+|-----------|--------|--------------|
+| Test coverage | >90% | `pytest --cov=nexus --cov-report=term` |
+| Documentation complete | All APIs documented | Manual review |
+| E2E tests pass | All workflows | `pytest tests/e2e/` |
+| Security tests | All 16 layers | `pytest tests/security/` |
+
+---
+
+## 🔙 Rollback Strategy
+
+### Feature Flags (Required for Breaking Changes)
+
+| Feature | Flag | Default | Fallback |
+|---------|------|---------|----------|
+| Async execution | `NEXUS_ASYNC=true` | `false` | Sync mode |
+| Tiktoken tokenizer | `NEXUS_TIKTOKEN=true` | `false` | `.split()` estimation |
+| Bleach sanitization | `NEXUS_BLEACH=true` | `false` | Regex patterns |
+| DAG workflows | `NEXUS_DAG_WORKFLOW=true` | `false` | List-based approach |
+| ACL enhancement | `NEXUS_ACL_V2=true` | `false` | Basic ACL |
+
+### Rollback Procedure
+
+```bash
+# 1. Identify issue from monitoring
+# 2. Set feature flag to false
+export NEXUS_ASYNC=false
+
+# 3. Restart services
+docker-compose restart
+
+# 4. Verify rollback succeeded
+curl http://localhost:8080/health
+```
+
+### Version Control Strategy
+
+| Change Type | Branch Strategy | Merge Requirement |
+|-------------|-----------------|-------------------|
+| Bug fix | `fix/*` branch | 1 approval + passing tests |
+| Feature | `feat/*` branch | 2 approvals + passing tests |
+| Breaking change | `breaking/*` branch | 2 approvals + manual QA |
+| Security fix | `security/*` branch | Immediate merge after verification |
+
+---
+
+## 💻 Resource Requirements
+
+### Development Environment
+
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| Python | 3.11+ | 3.12+ |
+| RAM | 4GB | 8GB+ |
+| Disk | 2GB | 10GB+ (with Docker) |
+| CPU | 2 cores | 4+ cores |
+
+### External Dependencies
+
+| Service | Purpose | Required |
+|---------|---------|----------|
+| Docker | Sandbox execution, testing | Yes |
+| Redis | Distributed rate limiting | Optional |
+| PostgreSQL | Production persistence | Optional |
+| NVIDIA NIM API | LLM provider | Yes (or OpenAI/Anthropic) |
+
+### CI/CD Requirements
+
+| Resource | Usage |
+|----------|-------|
+| GitHub Actions | Free tier sufficient |
+| Test runners | 4 parallel jobs |
+| Cache storage | ~500MB for dependencies |
+| Artifact storage | ~100MB per build |
+
+---
+
+## 📋 Pre-commit & Code Quality Requirements
+
+### Required Hooks (`.pre-commit-config.yaml`)
+
+```yaml
+repos:
+ - repo: https://github.com/psf/black
+ rev: 24.1.0
+ hooks:
+ - id: black
+ language_version: python3.11
+
+ - repo: https://github.com/pycqa/isort
+ rev: 5.13.2
+ hooks:
+ - id: isort
+ args: ["--profile", "black"]
+
+ - repo: https://github.com/pycqa/flake8
+ rev: 7.0.0
+ hooks:
+ - id: flake8
+ args: ["--max-line-length=100"]
+
+ - repo: https://github.com/pre-commit/mirrors-mypy
+ rev: v1.8.0
+ hooks:
+ - id: mypy
+ additional_dependencies: [types-all]
+
+ - repo: https://github.com/pycqa/bandit
+ rev: 1.7.22
+ hooks:
+ - id: bandit
+ args: ["-r", "nexus/"]
+```
+
+### Code Quality Standards
+
+| Tool | Purpose | Configuration |
+|------|---------|--------------|
+| **black** | Formatting | Line length: 100 |
+| **isort** | Import sorting | Profile: black |
+| **flake8** | Linting | Max line: 100, ignore E203,W503 |
+| **mypy** | Type checking | Strict mode |
+| **bandit** | Security scan | Exclude tests/ |
+| **pytest** | Testing | Coverage: >90% |
+
+### Quality Gates (per commit)
+
+```bash
+# Run all quality checks
+make lint # black --check, isort --check, flake8, mypy
+make test # pytest --cov=nexus --cov-fail-under=90
+make security # bandit -r nexus/
+```
+
+---
 ## 🏆 Final State Vision
 
 After completing this plan, NEXUS will be:
