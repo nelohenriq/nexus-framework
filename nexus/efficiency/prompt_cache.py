@@ -3,12 +3,14 @@ NEXUS Framework - Prompt Caching
 
 Built-in prompt caching for LLM API optimization.
 Reduces token usage by caching static prefixes.
+Uses OrderedDict for O(1) LRU eviction.
 """
 
 from __future__ import annotations
 
 import hashlib
 import time
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Any
 import threading
@@ -28,11 +30,11 @@ class CacheEntry:
 class PromptCache:
     """
     Prompt caching system for LLM API optimization.
-    Caches static prefixes to reduce token usage.
+    Uses OrderedDict for O(1) LRU eviction.
     """
 
     def __init__(self, max_entries: int = 1000) -> None:
-        self._cache: dict[str, CacheEntry] = {}
+        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self._max_entries = max_entries
         self._lock = threading.Lock()
         self._total_hits = 0
@@ -52,7 +54,9 @@ class PromptCache:
                 entry.last_hit = time.time()
                 self._total_hits += 1
                 self._total_saved += entry.tokens
-                return entry
+                # Move to end for LRU (most recently used at end)
+                self._cache.move_to_end(prefix_hash)
+            return entry
             return None
 
     def put(self, prefix: str, tokens: int) -> CacheEntry:
@@ -60,7 +64,7 @@ class PromptCache:
         prefix_hash = self.compute_prefix_hash(prefix)
         with self._lock:
             if len(self._cache) >= self._max_entries:
-                self._evict_oldest()
+                self._evict_lru()
             entry = CacheEntry(
                 prefix_hash=prefix_hash,
                 static_prefix=prefix,
@@ -69,12 +73,12 @@ class PromptCache:
             self._cache[prefix_hash] = entry
             return entry
 
-    def _evict_oldest(self) -> None:
-        """Evict oldest/least used entry."""
+    def _evict_lru(self) -> None:
+        """Evict least recently used entry (O(1) with OrderedDict)."""
         if not self._cache:
             return
-        oldest_key = min(self._cache.keys(), key=lambda k: self._cache[k].last_hit)
-        del self._cache[oldest_key]
+        # popitem(last=False) removes first item (least recently used)
+        self._cache.popitem(last=False)
 
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
