@@ -211,8 +211,9 @@ class TOONCompression:
         return self.encode(data)
 
     def estimate_tokens(self, text: str) -> int:
-        """Estimate token count (rough: 1 token per 4 chars)."""
-        return len(text) // 4
+        """Estimate token count using precise tokenizer."""
+        from nexus.efficiency.tokenizer import count_tokens
+        return count_tokens(text)
 
     def get_compression_ratio(self, data: Dict) -> float:
         """Calculate compression ratio vs JSON."""
