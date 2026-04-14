@@ -3,17 +3,18 @@ NEXUS Framework - Rate Limiting
 
 Built-in rate limiting for LLM API protection.
 Uses sliding window algorithm for accurate RPM limiting.
+Async-compatible with non-blocking acquire.
 """
 
 from __future__ import annotations
 
+import asyncio
 import time
 import threading
 from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 
-# Use monotonic time for rate limiting (more reliable than time.time())
 _TIME = time.monotonic
 
 
@@ -30,6 +31,7 @@ class RateLimiter:
     """
     Rate limiter using sliding window algorithm.
     Protects against API rate limit errors.
+    Async-compatible with non-blocking acquire_async().
     """
 
     def __init__(self, max_rpm: int = 60, name: str = "default") -> None:
@@ -42,7 +44,7 @@ class RateLimiter:
 
     def acquire(self, timeout: Optional[float] = None) -> bool:
         """
-        Acquire permission to make a request.
+        Acquire permission to make a request (sync, blocking).
         Blocks if rate limited until slot available.
         Returns True if acquired, False if timeout.
         """
@@ -57,12 +59,36 @@ class RateLimiter:
                     self._requests.append(now)
                     self._total_requests += 1
                     return True
-                self._total_limited += 1
+            self._total_limited += 1
             if timeout is not None:
                 elapsed = _TIME() - start_time
                 if elapsed >= timeout:
                     return False
             time.sleep(0.1)
+
+    async def acquire_async(self, timeout: Optional[float] = None) -> bool:
+        """
+        Acquire permission to make a request (async, non-blocking).
+        Blocks if rate limited until slot available.
+        Returns True if acquired, False if timeout.
+        """
+        start_time = _TIME()
+        while True:
+            with self._lock:
+                now = _TIME()
+                window_start = now - 60.0
+                while self._requests and self._requests[0] < window_start:
+                    self._requests.popleft()
+                if len(self._requests) < self._max_rpm:
+                    self._requests.append(now)
+                    self._total_requests += 1
+                    return True
+            self._total_limited += 1
+            if timeout is not None:
+                elapsed = _TIME() - start_time
+                if elapsed >= timeout:
+                    return False
+            await asyncio.sleep(0.1)
 
     def try_acquire(self) -> bool:
         """Non-blocking attempt to acquire."""
@@ -102,8 +128,5 @@ class RateLimiter:
                 "max_rpm": self._max_rpm,
                 "total_requests": self._total_requests,
                 "total_limited": self._total_limited,
-                "current_usage": len(self._requests)
+                "current_usage": len(self._requests),
             }
-
-
-__all__ = ["RateLimitStatus", "RateLimiter"]
