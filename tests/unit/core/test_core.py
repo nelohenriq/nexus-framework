@@ -11,17 +11,17 @@ from nexus.core.context import Context
 
 class TestMessage:
     def test_create_user_message():
- msg = Message(role=MessageRole.USER, content="Hello")
- assert msg.role == MessageRole.USER
- assert msg.content == "Hello"
+        msg = Message(role=MessageRole.USER, content="Hello")
+        assert msg.role == MessageRole.USER
+        assert msg.content == "Hello"
 
     def test_create_assistant_message():
- msg = Message(role=MessageRole.ASSISTANT, content="Hi there")
- assert msg.role == MessageRole.ASSISTANT
- assert msg.content == "Hi there"
+        msg = Message(role=MessageRole.ASSISTANT, content="Hi there")
+        assert msg.role == MessageRole.ASSISTANT
+        assert msg.content == "Hi there"
 
     def test_message_to_dict():
- msg = Message(role=MessageRole.USER, content="Test")
+        msg = Message(role=MessageRole.USER, content="Test")
         d = msg.to_dict()
         assert "role" in d
         assert "content" in d
