@@ -4,24 +4,24 @@ import pytest
 import sys
 sys.path.insert(0, "/a0/usr/projects/meta_agentic_framework")
 
-from nexus.core.messages import Message, Role
+from nexus.core.messages import Message, MessageRole
 from nexus.core.memory import Memory
 from nexus.core.context import Context
 
 
 class TestMessage:
     def test_create_user_message():
-        msg = Message(role=Role.USER, content="Hello")
-        assert msg.role == Role.USER
-        assert msg.content == "Hello"
+ msg = Message(role=MessageRole.USER, content="Hello")
+ assert msg.role == MessageRole.USER
+ assert msg.content == "Hello"
 
     def test_create_assistant_message():
-        msg = Message(role=Role.ASSISTANT, content="Hi there")
-        assert msg.role == Role.ASSISTANT
-        assert msg.content == "Hi there"
+ msg = Message(role=MessageRole.ASSISTANT, content="Hi there")
+ assert msg.role == MessageRole.ASSISTANT
+ assert msg.content == "Hi there"
 
     def test_message_to_dict():
-        msg = Message(role=Role.USER, content="Test")
+ msg = Message(role=MessageRole.USER, content="Test")
         d = msg.to_dict()
         assert "role" in d
         assert "content" in d
