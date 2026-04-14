@@ -22,6 +22,7 @@ from nexus.core.context import AgentContext
 from nexus.core.tools import ToolRegistry, ToolResult, ToolError
 from nexus.efficiency.rate_limiter import RateLimiter
 from nexus.efficiency.budget_enforcer import BudgetEnforcer, BudgetConfig
+from nexus.efficiency.tokenizer import Tokenizer
 
 
 class AgentState(str, Enum):
@@ -92,6 +93,7 @@ class AgentLoop:
         self.iteration = 0
         self._start_time = 0.0
         self._total_tokens = 0
+        self._tokenizer = Tokenizer()
 
     def run(self, context: AgentContext, task: str, system_prompt: Optional[str] = None) -> AgentResponse:
         """Run the agent loop synchronously."""
@@ -188,8 +190,9 @@ class AgentLoop:
             return ToolResult(success=False, output="", error=str(e))
 
     def _needs_summarization(self, context: AgentContext) -> bool:
-        total_chars = sum(len(m.content) for m in context.messages)
-        estimated_tokens = total_chars // 4
+        """Check if context needs summarization using precise token counting."""
+        messages = [{"role": m.role.value, "content": m.content} for m in context.messages]
+        estimated_tokens = self._tokenizer.count_messages(messages).tokens
         threshold = self.config.context_window_limit * self.config.summarization_threshold
         return estimated_tokens > threshold
 
