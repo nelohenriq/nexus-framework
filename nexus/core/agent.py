@@ -109,7 +109,7 @@ class AgentLoop:
                     await self._summarize_context(context)
                 prompt = self._assemble_prompt(context, system_prompt)
                 if self.rate_limiter:
-                    self.rate_limiter.acquire()
+                    await self.rate_limiter.acquire_async()
                 self.state = AgentState.THINKING
                 response = await self._call_llm(prompt)
                 self._total_tokens += response.get("tokens", 0)
@@ -131,13 +131,13 @@ class AgentLoop:
                         content=json.dumps(tool_result.to_dict()),
                         metadata={"tool_name": parsed.get("tool_name")}
                     ))
-                return AgentResponse(
-                    agent_id=self.config.agent_id,
-                    content=f"Max iterations reached",
-                    success=False,
-                    error="max_iterations_exceeded",
-                    tokens_used=self._total_tokens
-                )
+            return AgentResponse(
+                agent_id=self.config.agent_id,
+                content="Max iterations reached",
+                success=False,
+                error="max_iterations_exceeded",
+                tokens_used=self._total_tokens
+            )
         except Exception as e:
             self.state = AgentState.ERROR
             return AgentResponse(
